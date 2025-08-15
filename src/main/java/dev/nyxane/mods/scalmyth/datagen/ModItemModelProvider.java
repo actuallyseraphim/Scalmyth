@@ -39,7 +39,6 @@ public class ModItemModelProvider extends ItemModelProvider {
         basicItem(ModItems.ASHEN_DOOR.get());
         fenceItem(ModBlocks.ASHEN_FENCE, ModBlocks.ASHEN_PLANKS);
         buttonItem(ModBlocks.ASHEN_BUTTON, ModBlocks.ASHEN_PLANKS);
-        spawnEggItem(ModItems.SCALMYTH_SPAWN_EGG.get());
 
         flatBlockItem(ModBlocks.ASHEN_SHORT_GRASS, "");
         flatBlockItem(ModBlocks.ASHEN_TALL_GRASS, "_top");

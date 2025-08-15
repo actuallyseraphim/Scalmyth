@@ -16,7 +16,6 @@ import net.minecraft.world.item.BlockItem;
 
 public class ModItems {
     public static final DeferredRegister.Items REGISTRY = DeferredRegister.createItems(ScalmythAPI.MOD_ID);
-    public static final DeferredItem<Item> SCALMYTH_SPAWN_EGG = REGISTRY.register("scalmyth_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.SCALMYTH, -1, -1, new Item.Properties()));
     public static final DeferredItem<Item> ASHEN_GRASS = block(ModBlocks.ASHEN_GRASS);
     public static final DeferredItem<Item> BLOOD_FLOWER = block(ModBlocks.BLOOD_FLOWER);
     public static final DeferredItem<Item> ASH_DUST = REGISTRY.register("ash_dust", AshDustItem::new);

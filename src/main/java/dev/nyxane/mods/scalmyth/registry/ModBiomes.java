@@ -43,7 +43,7 @@ public class ModBiomes {
                 ChunkGenerator chunkGenerator = levelStem.generator();
                 // Inject biomes to biome source
                 if (chunkGenerator.getBiomeSource() instanceof MultiNoiseBiomeSource noiseSource) {
-                  List<Pair<Climate.ParameterPoint, Holder<Biome>>> parameters = new ArrayList<>(noiseSource.parameters().values());
+                    List<Pair<Climate.ParameterPoint, Holder<Biome>>> parameters = new ArrayList<>(noiseSource.parameters().values());
 
                     addParameterPoint(parameters, new Pair<>(new Climate.ParameterPoint(Climate.Parameter.span(-0.3f, 1.5f), Climate.Parameter.span(-1.5f, 0.1f), Climate.Parameter.span(-0.5f, 1.2f), Climate.Parameter.span(-2f, -0.2f),
                             Climate.Parameter.point(0.0f), Climate.Parameter.span(-0.3f, 1f), 0), biomeRegistry.getHolderOrThrow(ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("scalmyth", "ashen_biome")))));
