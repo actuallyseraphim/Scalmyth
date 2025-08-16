@@ -6,13 +6,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.List;
 
 public class ScalmythEntity extends Entity {
     public final Bone rootBone = Bone.builder("root")
@@ -49,11 +45,12 @@ public class ScalmythEntity extends Entity {
 
     @Override
     public void tick() {
-        Player player = this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 1, false);
         HitResult hit = Minecraft.getInstance().hitResult;
         if (hit == null) return;
         Bone last = rootBone.getChild("first").getChild("second").getChild("third");
         last.desiredPosition = hit.getLocation().subtract(getPosition(0));
-        last.resolvePosition();
+        for (int i = 0; i < 10; i++) {
+            last.resolveIK();
+        }
     }
 }

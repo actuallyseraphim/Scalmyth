@@ -9,19 +9,35 @@ import java.util.Map;
 
 public class Bone {
     private String name;
+    public Vec3 defaultVector;
+    public double defaultDistance;
+
     public Vec3 position;
-    public double distance;
     public Vec3 desiredPosition;
     public Bone parent;
     private final Map<String, Bone> children;
 
-    public void resolvePosition() {
+    public Vec3 resolvePosition() {
+        Vec3 pos = desiredPosition;
+        Vec3 vector = pos.subtract(parent.position);
+        vector = vector.normalize().scale(defaultDistance);
+        double dot = vector.normalize().dot(defaultVector.normalize());
+        double d = 0.1;
+        Vec3 dir = vector.normalize();
+        if (dot > d) {
+            double a = 90;
+            double cosa = Math.cos(a/180*Math.PI);
+            dir = (dir.subtract(defaultVector.scale(dir.dot(defaultVector)))).normalize().scale(Math.sqrt(1 - cosa * cosa)).add(dir.scale(cosa));
+        }
+        vector = dir.scale(vector.length());
+        return vector.add(parent.position);
+    }
+
+    public void resolveIK() {
         if (parent == null) return;
-        position = desiredPosition.subtract(parent.position).normalize().scale(distance).add(parent.position);
-        System.out.println(this.position);
-        //position = desiredPosition;
+        position = resolvePosition();
         parent.desiredPosition = desiredPosition.subtract(position).add(parent.position);
-        parent.resolvePosition();
+        parent.resolveIK();
     }
 
     public void render(PoseStack poseStack, VertexConsumer buffer) {
@@ -40,7 +56,8 @@ public class Bone {
         this.position = builder.position;
         this.desiredPosition = builder.position;
         this.name = builder.name;
-        this.distance = builder.distance;
+        this.defaultVector = builder.vector;
+        this.defaultDistance = this.defaultVector.length();
     }
 
     public static Builder builder(String name) {
@@ -53,14 +70,20 @@ public class Bone {
 
     public static class Builder {
         private final HashMap<String, Bone> endConnections = new HashMap<>();
+        private Vec3 vector = new Vec3(0,0,0);
+
         private final Builder parentBuilder;
-        private double distance = 0;
         private final String name;
         private Vec3 position = new Vec3(0,0,0);
 
         public Builder(Builder parent, String name) {
             this.parentBuilder = parent;
             this.name = name;
+        }
+
+        public Builder addChild(Bone child) {
+            endConnections.put(name, child);
+            return this;
         }
 
         public Builder startChild(String name) {
@@ -75,7 +98,7 @@ public class Bone {
         public Builder setEndpoint(Vec3 endpoint) {
             position = endpoint;
             if (parentBuilder != null) {
-                distance = position.distanceTo(parentBuilder.position);
+                vector = position.subtract(parentBuilder.position);
             }
             return this;
         }
