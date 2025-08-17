@@ -8,24 +8,19 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 
 public class ScalmythEntity extends Entity {
-    public final Bone rootBone = Bone.builder("root")
-            .setEndpoint(new Vec3(0,1,0))
-            .startChild("first")
-            .setEndpoint(new Vec3(0, 0.5, 0))
-            .startChild("second")
-            .setEndpoint(new Vec3(0.5, 0.5, 0))
-            .startChild("third")
-            .setEndpoint(new Vec3(0.5, 0, 0))
-            .endChild()
-            .endChild()
-            .endChild()
-            .build();
+    public final Bone rootBone;
 
     public ScalmythEntity(EntityType<?> entityType, Level level) {
         super(entityType, level);
+        this.rootBone = new Bone("root",0);
+        Bone first = new Bone("first", 0.5);
+        rootBone.addChild(first);
+        Bone second = new Bone("second", 0.5);
+        first.addChild(second);
+        Bone third = new Bone("third", 0.5);
+        second.addChild(third);
     }
 
     @Override
@@ -47,10 +42,11 @@ public class ScalmythEntity extends Entity {
     public void tick() {
         HitResult hit = Minecraft.getInstance().hitResult;
         if (hit == null) return;
-        Bone last = rootBone.getChild("first").getChild("second").getChild("third");
-        last.desiredPosition = hit.getLocation().subtract(getPosition(0));
-        for (int i = 0; i < 10; i++) {
-            last.resolveIK();
-        }
+        Bone last = rootBone
+                .getChild("first")
+                .getChild("second")
+                .getChild("third");
+        last.setDesiredPosition(hit.getLocation().subtract(getPosition(0)));
+        last.resolveIK();
     }
 }

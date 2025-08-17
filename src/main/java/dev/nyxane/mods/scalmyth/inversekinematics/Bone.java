@@ -5,110 +5,98 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class Bone {
     private String name;
-    public Vec3 defaultVector;
-    public double defaultDistance;
+    private Bone parent;
 
-    public Vec3 position;
-    public Vec3 desiredPosition;
-    public Bone parent;
-    private final Map<String, Bone> children;
+    public HashMap<String, Bone> children;
 
-    public Vec3 resolvePosition() {
-        Vec3 pos = desiredPosition;
-        Vec3 vector = pos.subtract(parent.position);
-        vector = vector.normalize().scale(defaultDistance);
-        double dot = vector.normalize().dot(defaultVector.normalize());
-        double d = 0.1;
-        Vec3 dir = vector.normalize();
-        if (dot > d) {
-            double a = 90;
-            double cosa = Math.cos(a/180*Math.PI);
-            dir = (dir.subtract(defaultVector.scale(dir.dot(defaultVector)))).normalize().scale(Math.sqrt(1 - cosa * cosa)).add(dir.scale(cosa));
-        }
-        vector = dir.scale(vector.length());
-        return vector.add(parent.position);
+    private double boneLength = 0;
+    private AxisAngle boneRotation = new AxisAngle(new Vec3(0,0,0), 0);
+
+    private Vec3 desiredPosition = new Vec3(0,0,0);
+    private double desiredAngle = 0;
+
+    public Bone(String name, double length) {
+        this.name = name;
+        this.children = new HashMap<>();
+        this.boneLength = length;
     }
 
     public void resolveIK() {
         if (parent == null) return;
-        position = resolvePosition();
-        parent.desiredPosition = desiredPosition.subtract(position).add(parent.position);
+        Vec3 err = desiredPosition.subtract(getPosition());
+        boneRotation = new AxisAngle(getVector().add(err), desiredAngle);
+        parent.desiredPosition = desiredPosition
+                .subtract(getVector());
         parent.resolveIK();
     }
 
     public void render(PoseStack poseStack, VertexConsumer buffer) {
         poseStack.pushPose();
-        poseStack.translate(position.x, position.y, position.z);
+        Vec3 p = getVector();
+        poseStack.translate(p.x, p.y, p.z);
         buffer.addVertex(poseStack.last(),0f,0f,0f).setColor(1f,0f,0f,1f);
-        poseStack.popPose();
 
-        for (Map.Entry<String, Bone> entry: children.entrySet()) {
+        for (HashMap.Entry<String, Bone> entry: children.entrySet()) {
             entry.getValue().render(poseStack, buffer);
         }
-    }
-
-    Bone(Builder builder) {
-        this.children = builder.endConnections;
-        this.position = builder.position;
-        this.desiredPosition = builder.position;
-        this.name = builder.name;
-        this.defaultVector = builder.vector;
-        this.defaultDistance = this.defaultVector.length();
-    }
-
-    public static Builder builder(String name) {
-        return new Builder(null, name);
+        poseStack.popPose();
     }
 
     public Bone getChild(String string) {
         return children.get(string);
     }
 
-    public static class Builder {
-        private final HashMap<String, Bone> endConnections = new HashMap<>();
-        private Vec3 vector = new Vec3(0,0,0);
+    public void addChild(Bone bone) {
+        bone.parent = this;
+        children.put(bone.name, bone);
+    }
 
-        private final Builder parentBuilder;
-        private final String name;
-        private Vec3 position = new Vec3(0,0,0);
+    public Vec3 getDesiredPosition() {
+        return desiredPosition;
+    }
 
-        public Builder(Builder parent, String name) {
-            this.parentBuilder = parent;
-            this.name = name;
-        }
+    public void setDesiredPosition(Vec3 desiredPosition) {
+        this.desiredPosition = desiredPosition;
+    }
 
-        public Builder addChild(Bone child) {
-            endConnections.put(name, child);
-            return this;
-        }
+    public String getName() {
+        return name;
+    }
 
-        public Builder startChild(String name) {
-            return new Builder(this, name);
-        }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-        public Builder endChild() {
-            parentBuilder.endConnections.put(name, this.build());
-            return parentBuilder;
-        }
+    public Bone getParent() {
+        return parent;
+    }
 
-        public Builder setEndpoint(Vec3 endpoint) {
-            position = endpoint;
-            if (parentBuilder != null) {
-                vector = position.subtract(parentBuilder.position);
-            }
-            return this;
-        }
+    private void setParent(Bone parent) {
+        this.parent = parent;
+    }
 
-        public Bone build() {
-            Bone bone = new Bone(this);
-            for (Map.Entry<String, Bone> entry: bone.children.entrySet()) {
-                entry.getValue().parent = bone;
-            }
-            return bone;
-        }
+    /**
+     * <b>NOT O(1)</b>
+     * <p>It's O(n) where n is node's distance to root</p>
+     * @return Current position of a node
+     */
+    public Vec3 getPosition() {
+        if (parent == null) return new Vec3(0,0,0);
+        return getVector().add(parent.getPosition());
+    }
+
+    public Vec3 getVector() {
+        return boneRotation.getVec().scale(boneLength);
+    }
+
+    public double getDesiredAngle() {
+        return desiredAngle;
+    }
+
+    public void setDesiredAngle(double desiredAngle) {
+        this.desiredAngle = desiredAngle;
     }
 }
