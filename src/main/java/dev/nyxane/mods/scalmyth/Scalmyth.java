@@ -19,8 +19,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 @Mod(ScalmythAPI.MOD_ID)
-public class Scalmyth
-{
+public class Scalmyth {
     public Scalmyth(IEventBus modEventBus)  {
         ModEntities.register(modEventBus);
         ModTabs.register(modEventBus);
