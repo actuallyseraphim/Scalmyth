@@ -76,10 +76,6 @@ public class Bone {
         return new Vector3f(desiredPosition);
     }
 
-//    public void setDesiredPosition(Vector3f desiredPosition) {
-//        this.desiredPosition = desiredPosition;
-//    }
-
     public void setDesiredPosition(Vector3f desiredPosition) {
         if (!this.desiredPosition.isFinite()) {
             this.desiredPosition = desiredPosition;
@@ -101,8 +97,7 @@ public class Bone {
         Vec3i inorm = hit.getDirection().getNormal();
         Vector3f normal = new Vector3f(inorm.getX(), inorm.getY(), inorm.getZ());
         Vector3f err = normal.mul(desiredPosition.sub(hit_pos, new Vector3f()), new Vector3f());
-
-        System.out.println(desiredPosition.sub(hit_pos, new Vector3f()));
+        
         this.desiredPosition.set(hit_pos.sub(err, new Vector3f()));
     }
 
