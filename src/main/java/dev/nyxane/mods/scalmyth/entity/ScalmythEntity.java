@@ -14,12 +14,12 @@ public class ScalmythEntity extends Entity {
 
     public ScalmythEntity(EntityType<?> entityType, Level level) {
         super(entityType, level);
-        this.rootBone = new Bone("root",0);
-        Bone first = new Bone("first", 0.5);
+        this.rootBone = new Bone("root",0, this);
+        Bone first = new Bone("first", 0.5, this);
         rootBone.addChild(first);
-        Bone second = new Bone("second", 0.5);
+        Bone second = new Bone("second", 0.5, this);
         first.addChild(second);
-        Bone third = new Bone("third", 0.5);
+        Bone third = new Bone("third", 0.5, this);
         second.addChild(third);
     }
 
@@ -46,7 +46,7 @@ public class ScalmythEntity extends Entity {
                 .getChild("first")
                 .getChild("second")
                 .getChild("third");
-        last.setDesiredPosition(hit.getLocation().subtract(getPosition(0)));
+        last.setDesiredPosition(hit.getLocation().subtract(getPosition(0)).toVector3f());
         last.resolveIK();
     }
 }

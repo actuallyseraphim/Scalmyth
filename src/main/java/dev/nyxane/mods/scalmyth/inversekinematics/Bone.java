@@ -2,13 +2,20 @@ package dev.nyxane.mods.scalmyth.inversekinematics;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
 
 public class Bone {
+    public static final float JOINT_SIZE = 0.02f;
+
     private String name;
     private Bone parent;
 
@@ -17,23 +24,30 @@ public class Bone {
     private float boneLength;
     private Quaternionf quaternion = new Quaternionf();
 
+    private final Entity entity;
     private Vector3f desiredPosition = new Vector3f(0,0,0);
     private float desiredAngle = 0;
 
     // double to float cast for not writing f
-    public Bone(String name, double length) {
+    public Bone(String name, double length, Entity entity) {
         this.name = name;
         this.boneLength = (float) length;
+        this.entity = entity;
         this.children = new HashMap<>();
     }
 
     public void resolveIK() {
         if (parent == null) return;
-        Vector3f err = desiredPosition.sub(getPosition(), new Vector3f());
-        Quaternionf quaternion_err = new Quaternionf().rotateTo(getVector(), getVector().add(err)).normalize();
+        Vector3f ppos = parent.getPosition();
+        Vector3f vec = getVector();
+        Vector3f pos = ppos.add(vec, new Vector3f());
+
+        Vector3f err = desiredPosition.sub(pos, new Vector3f());
+
+        Quaternionf quaternion_err = new Quaternionf().rotateTo(vec, vec.add(err, new Vector3f())).normalize();
         quaternion = quaternion_err.mul(quaternion, new Quaternionf());
-        parent.desiredPosition = desiredPosition
-                .sub(getVector(), new Vector3f());
+
+        parent.setDesiredPosition(desiredPosition.sub(getVector(), new Vector3f()));
         parent.resolveIK();
     }
 
@@ -58,12 +72,38 @@ public class Bone {
         children.put(bone.name, bone);
     }
 
-    public Vec3 getDesiredPosition() {
-        return new Vec3(desiredPosition);
+    public Vector3f getDesiredPosition() {
+        return new Vector3f(desiredPosition);
     }
 
-    public void setDesiredPosition(Vec3 desiredPosition) {
-        this.desiredPosition = desiredPosition.toVector3f();
+//    public void setDesiredPosition(Vector3f desiredPosition) {
+//        this.desiredPosition = desiredPosition;
+//    }
+
+    public void setDesiredPosition(Vector3f desiredPosition) {
+        if (!this.desiredPosition.isFinite()) {
+            this.desiredPosition = desiredPosition;
+            return;
+        }
+        ClipContext ctx = new ClipContext(
+                new Vec3(this.desiredPosition).add(entity.position()),
+                new Vec3(desiredPosition).add(entity.position()),
+                ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE,
+                CollisionContext.empty()
+        );
+        BlockHitResult hit = entity.level().clip(ctx);
+        if (hit.isInside()) {
+            this.desiredPosition = desiredPosition;
+            return;
+        }
+        Vector3f hit_pos = hit.getLocation().subtract(entity.position()).toVector3f();
+        Vec3i inorm = hit.getDirection().getNormal();
+        Vector3f normal = new Vector3f(inorm.getX(), inorm.getY(), inorm.getZ());
+        Vector3f err = normal.mul(desiredPosition.sub(hit_pos, new Vector3f()), new Vector3f());
+
+        System.out.println(desiredPosition.sub(hit_pos, new Vector3f()));
+        this.desiredPosition.set(hit_pos.sub(err, new Vector3f()));
     }
 
     public String getName() {
