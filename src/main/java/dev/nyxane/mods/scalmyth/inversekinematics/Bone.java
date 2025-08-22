@@ -2,6 +2,7 @@ package dev.nyxane.mods.scalmyth.inversekinematics;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
@@ -18,6 +19,7 @@ public class Bone {
 
     private String name;
     private Bone parent;
+    private ModelPart modelPart;
 
     public HashMap<String, Bone> children;
 
