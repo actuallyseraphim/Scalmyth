@@ -11,6 +11,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -26,7 +27,7 @@ public class Bone {
     private float boneLength = 1;
     private Quaternionf quaternion = new Quaternionf();
     private Vector3f twistAxis = new Vector3f(0,1,0);
-    private float maxSwingConeAngle = 1;
+    private float maxSwingAngle = (float) Math.toRadians(45.0);
 
     private final Entity entity;
     private Vector3f desiredPosition = new Vector3f(0,0,0);
@@ -59,20 +60,20 @@ public class Bone {
         twist.normalize();
 
         // swing constraint
-        Vector3f swungAxis = swing.transform(new Vector3f(twistAxis));
-        float angle = (float)Math.acos(swungAxis.dot(twistAxis));
-        if (angle > maxSwingConeAngle) {
-            float t = maxSwingConeAngle/angle;
-            swing.slerp(new Quaternionf(), t).normalize();
+        float swingAngle = swing.angle();
+        if (swingAngle > maxSwingAngle) {
+            Vector3f swingAxis = new Vector3f(swing.x, swing.y, swing.z).normalize();
+            if (swingAxis.length() > 1e-5f) {
+                swing.setAngleAxis(maxSwingAngle, swingAxis.x, swingAxis.y, swingAxis.z);
+            }
         }
 
         // recombination
         quaternion = swing.mul(twist, new Quaternionf()).normalize();
-        //ScalmythAPI.LOGGER.debug("q: {}, t: {}", quaternion, swing.mul(twist, new Quaternionf()));
 
         // propagation
         parent.setDesiredPosition(desiredPosition.sub(getVector(), new Vector3f()));
-        //parent.resolveIK();
+        parent.resolveIK();
     }
 
     public void render(PoseStack poseStack, VertexConsumer buffer) {
