@@ -2,6 +2,8 @@ package dev.nyxane.mods.scalmyth.inversekinematics;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import dev.nyxane.mods.scalmyth.Scalmyth;
+import dev.nyxane.mods.scalmyth.api.ScalmythAPI;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.entity.Entity;
@@ -15,16 +17,16 @@ import org.joml.Vector3f;
 import java.util.HashMap;
 
 public class Bone {
-    public static final float JOINT_SIZE = 0.02f;
-
     private String name;
     private Bone parent;
     private ModelPart modelPart;
 
     public HashMap<String, Bone> children;
 
-    private float boneLength;
+    private float boneLength = 1;
     private Quaternionf quaternion = new Quaternionf();
+    private Vector3f twistAxis = new Vector3f(0,1,0);
+    private float maxSwingConeAngle = 1;
 
     private final Entity entity;
     private Vector3f desiredPosition = new Vector3f(0,0,0);
@@ -43,14 +45,34 @@ public class Bone {
         Vector3f ppos = parent.getPosition();
         Vector3f vec = getVector();
         Vector3f pos = ppos.add(vec, new Vector3f());
-
         Vector3f err = desiredPosition.sub(pos, new Vector3f());
 
+        // positional correction
         Quaternionf quaternion_err = new Quaternionf().rotateTo(vec, vec.add(err, new Vector3f())).normalize();
         quaternion = quaternion_err.mul(quaternion, new Quaternionf());
 
+        // swing twist decomposition
+        Vector3f twistV = new Vector3f(quaternion.x, quaternion.y, quaternion.z);
+        twistAxis.mul(twistV.dot(twistAxis)/twistAxis.dot(twistAxis), twistV);
+        Quaternionf twist = new Quaternionf(twistV.x, twistV.y, twistV.z, quaternion.w);
+        Quaternionf swing = quaternion.mul(twist.invert(new Quaternionf()), new Quaternionf()).normalize();
+        twist.normalize();
+
+        // swing constraint
+        Vector3f swungAxis = swing.transform(new Vector3f(twistAxis));
+        float angle = (float)Math.acos(swungAxis.dot(twistAxis));
+        if (angle > maxSwingConeAngle) {
+            float t = maxSwingConeAngle/angle;
+            swing.slerp(new Quaternionf(), t).normalize();
+        }
+
+        // recombination
+        quaternion = swing.mul(twist, new Quaternionf()).normalize();
+        //ScalmythAPI.LOGGER.debug("q: {}, t: {}", quaternion, swing.mul(twist, new Quaternionf()));
+
+        // propagation
         parent.setDesiredPosition(desiredPosition.sub(getVector(), new Vector3f()));
-        parent.resolveIK();
+        //parent.resolveIK();
     }
 
     public void render(PoseStack poseStack, VertexConsumer buffer) {
@@ -79,7 +101,8 @@ public class Bone {
     }
 
     public void setDesiredPosition(Vector3f desiredPosition) {
-        if (!this.desiredPosition.isFinite()) {
+        this.desiredPosition = desiredPosition;
+/*        if (!this.desiredPosition.isFinite()) {
             this.desiredPosition = desiredPosition;
             return;
         }
@@ -100,7 +123,7 @@ public class Bone {
         Vector3f normal = new Vector3f(inorm.getX(), inorm.getY(), inorm.getZ());
         Vector3f err = normal.mul(desiredPosition.sub(hit_pos, new Vector3f()), new Vector3f());
         
-        this.desiredPosition.set(hit_pos.sub(err, new Vector3f()));
+        this.desiredPosition.set(hit_pos.sub(err, new Vector3f()));*/
     }
 
     public String getName() {
